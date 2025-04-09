@@ -1,3 +1,11 @@
+using GenericWinformTemplate.Extensions;
+using GenericWinformTemplate.Forms;
+using GenericWinformTemplate.Services;
+using GenericWinformTemplate.Services.Impl;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
 namespace GenericWinformTemplate
 {
     internal static class Program
@@ -8,10 +16,30 @@ namespace GenericWinformTemplate
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            var host = Host.CreateDefaultBuilder()
+                 .ConfigureAppConfiguration((context, config) =>
+                 {
+                     config.AddJsonFile("appSettings.json", optional: true, reloadOnChange: true);
+                 })
+                 .ConfigureServices((context, services) =>
+                 {
+                     context.Configuration.SetAppSettings();
+
+                     // Register services
+                     services.AddScoped<ITestService, TestService>();
+
+                     // Register forms
+                     services.AddTransient<MainForm>();
+                     services.AddTransient<SettingsForm>();
+                 }).Build();
+
+            using var scope = host.Services.CreateScope();
+            var mainform = scope.ServiceProvider.GetRequiredService<MainForm>();
+            Application.Run(mainform);
         }
     }
 }
